@@ -1,0 +1,15 @@
+../Drivers/CMSIS/Include/core_cm4.h:2064:26:ITM_SendChar	4
+../Core/Src/main.c:30:5:_write	2
+../Core/Src/main.c:86:5:main	1
+../Core/Src/main.c:183:6:SystemClock_Config	3
+../Core/Src/main.c:230:13:MX_RTC_Init	5
+../Core/Src/main.c:312:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:345:13:MX_GPIO_Init	1
+../Core/Src/main.c:391:6:set_time	2
+../Core/Src/main.c:405:6:set_date	2
+../Core/Src/main.c:419:6:get_time_date	1
+../Core/Src/main.c:432:6:set_alarm	2
+../Core/Src/main.c:453:6:HAL_RTC_AlarmAEventCallback	1
+../Core/Src/main.c:466:6:StartAlarmClockTask	1
+../Core/Src/main.c:490:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:508:6:Error_Handler	1

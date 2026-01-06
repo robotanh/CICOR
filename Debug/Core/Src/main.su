@@ -1,0 +1,15 @@
+../Drivers/CMSIS/Include/core_cm4.h:2064:26:ITM_SendChar	16	static,ignoring_inline_asm
+../Core/Src/main.c:30:5:_write	32	static
+../Core/Src/main.c:86:5:main	56	static
+../Core/Src/main.c:183:6:SystemClock_Config	88	static
+../Core/Src/main.c:230:13:MX_RTC_Init	72	static
+../Core/Src/main.c:312:13:MX_USART2_UART_Init	8	static
+../Core/Src/main.c:345:13:MX_GPIO_Init	48	static
+../Core/Src/main.c:391:6:set_time	40	static
+../Core/Src/main.c:405:6:set_date	32	static
+../Core/Src/main.c:419:6:get_time_date	48	static
+../Core/Src/main.c:432:6:set_alarm	64	static
+../Core/Src/main.c:453:6:HAL_RTC_AlarmAEventCallback	16	static
+../Core/Src/main.c:466:6:StartAlarmClockTask	16	static
+../Core/Src/main.c:490:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:508:6:Error_Handler	4	static,ignoring_inline_asm
