@@ -27,7 +27,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-int _write(int32_t file, uint8_t *ptr, int32_t len)
+int _write(int32_t file, uint8_t *ptr, int32_t len) //
 {
     for (int i = 0; i < len; i++)
     {
@@ -124,7 +124,7 @@ int main(void)
 //  if (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x2346)
 //  {
       set_time(15, 54, 0);
-      set_date(11, 8, 24, RTC_WEEKDAY_WEDNESDAY);  // 24 Aug 2011 was a Wednesday actually, but you used 7=Saturday? Anyway, corrected to example
+      set_date(25, 1, 7, RTC_WEEKDAY_WEDNESDAY);
 //      HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x2346);  // Mark as initialized
 //  }
 
@@ -473,8 +473,8 @@ void StartAlarmClockTask(void const * argument)
 	  printf("Date: %s\n", dateStr);
 	  printf("Time: %s\n", timeStr);
 //	  printf("hello\n");
-
-    osDelay(1000);
+	  //
+      osDelay(1000);
   }
   /* USER CODE END 5 */
 }
