@@ -1767,8 +1767,8 @@ int main(void)
  8001200:	2137      	movs	r1, #55	@ 0x37
  8001202:	200f      	movs	r0, #15
  8001204:	f000 fb2a 	bl	800185c <set_alarm>
-  myAccConfigDef.dataRate = LIS3DSH_DATARATE_12_5   ;
- 8001208:	2330      	movs	r3, #48	@ 0x30
+  myAccConfigDef.dataRate = LIS3DSH_DATARATE_50    ;
+ 8001208:	2350      	movs	r3, #80	@ 0x50
  800120a:	743b      	strb	r3, [r7, #16]
   myAccConfigDef.fullScale = LIS3DSH_FULLSCALE_2;
  800120c:	2300      	movs	r3, #0

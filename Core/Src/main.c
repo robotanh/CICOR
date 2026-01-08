@@ -156,7 +156,7 @@ int main(void)
   RTC_DateTypeDef currentDate;
   HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);
   set_alarm(15, 55, 0, currentDate.Date);
-  myAccConfigDef.dataRate = LIS3DSH_DATARATE_12_5   ;
+  myAccConfigDef.dataRate = LIS3DSH_DATARATE_50    ;
   myAccConfigDef.fullScale = LIS3DSH_FULLSCALE_2;
   myAccConfigDef.antiAliasingBW = LIS3DSH_FILTER_BW_50;
   myAccConfigDef.enableAxes = LIS3DSH_XYZ_ENABLE;
