@@ -18,11 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "MY_LIS3DSH.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,8 +37,17 @@ int _write(int32_t file, uint8_t *ptr, int32_t len) //
     return len;
 }
 uint8_t count =0;
+volatile uint8_t button_flag =0;
 char timeStr[20];
 char dateStr[20];
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
+{
+    if (GPIO_PIN == GPIO_PIN_0)  // Nút nhấn trên PIN 0
+    {
+    	button_flag = 1;
+    }
+}
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -53,9 +63,10 @@ char dateStr[20];
 /* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
 
+SPI_HandleTypeDef hspi1;
+
 UART_HandleTypeDef huart2;
 
-osThreadId alarmClockTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -65,14 +76,25 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_RTC_Init(void);
-void StartAlarmClockTask(void const * argument);
-
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+extern USBD_HandleTypeDef hUsbDeviceFS;
+typedef struct
+{
+	uint8_t button;
+	int8_t mouse_x;
+	int8_t mouse_y;
+	int8_t wheel;
+} mouseHID;
+mouseHID mousehid = {0,0,0,0};
+
+LIS3DSH_DataLinearScaled myData;
+LIS3DSH_DataRaw myDataRaw;
 void set_time(uint8_t hr, uint8_t min, uint8_t sec);
 void set_date(uint8_t year, uint8_t month, uint8_t date, uint8_t weekday);
 void get_time_date(char *time, char *date);
@@ -88,7 +110,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	/* Check if this is the first power-up (backup register not set) */
-
+   LIS3DSH_InitTypeDef myAccConfigDef;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -120,6 +142,8 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_RTC_Init();
+  MX_USB_DEVICE_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 //  if (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x2346)
 //  {
@@ -132,45 +156,66 @@ int main(void)
   RTC_DateTypeDef currentDate;
   HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);
   set_alarm(15, 55, 0, currentDate.Date);
+  myAccConfigDef.dataRate = LIS3DSH_DATARATE_12_5   ;
+  myAccConfigDef.fullScale = LIS3DSH_FULLSCALE_2;
+  myAccConfigDef.antiAliasingBW = LIS3DSH_FILTER_BW_50;
+  myAccConfigDef.enableAxes = LIS3DSH_XYZ_ENABLE;
+  myAccConfigDef.interruptEnable =  false;
+
+  LIS3DSH_Init(&hspi1, &myAccConfigDef);
+
+//  LIS3DSH_X_calibrate(-1.0, 1.0);
+//  LIS3DSH_Y_calibrate(-1.0, 1.0);
+//  LIS3DSH_Z_calibrate(-1.0, 1.0);
 
   /* USER CODE END 2 */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* definition and creation of alarmClockTask */
-  osThreadDef(alarmClockTask, StartAlarmClockTask, osPriorityNormal, 0, 128);
-  alarmClockTaskHandle = osThreadCreate(osThread(alarmClockTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
+	  if(LIS3DSH_PollDRDY(1000)== true){
+		  myData = LIS3DSH_GetDataLinearScaled();
+		  myDataRaw = LIS3DSH_GetDataRaw();
+//		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+	  }
+	  if(myDataRaw.x < 0){
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
+	  }
+	  else{
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
+	  }
+	  if(myDataRaw.y < 0){
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+	  }
+	  else{
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
+	  }
+	  if((myData.x > 20 || myData.x < -20)){
+		  mousehid.mouse_x = myData.x;
+	  }
+	  else mousehid.mouse_x = 0;
+	  if((myData.y > 20 || myData.y < -20)){
+		  mousehid.mouse_y = myData.y;
+	  }
+	  else mousehid.mouse_y = 0;
 
+	  if (button_flag == 1){
+		  mousehid.button = 1;
+		  USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof(mousehid));
+		  HAL_Delay(50);
+		  mousehid.button = 0;
+		  USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof(mousehid));
+		  button_flag =0;
+	  }
+
+	  USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof(mousehid));
+	  HAL_Delay(10);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -201,7 +246,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -305,6 +350,44 @@ static void MX_RTC_Init(void)
 }
 
 /**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -350,6 +433,7 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -357,30 +441,34 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MEMS_CS_GPIO_Port, MEMS_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PA0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  /*Configure GPIO pin : MEMS_CS_Pin */
+  GPIO_InitStruct.Pin = MEMS_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MEMS_CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PD15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  /*Configure GPIO pins : PD12 PD13 PD14 PD15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -452,54 +540,9 @@ void set_alarm(uint8_t hr, uint8_t min, uint8_t sec, uint8_t date)
 
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);  // Turn on orange LED on Discovery board
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);  // Turn on orange LED on Discovery board
 }
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartAlarmClockTask */
-/**
-  * @brief  Function implementing the alarmClockTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartAlarmClockTask */
-void StartAlarmClockTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  get_time_date(timeStr, dateStr);
-	  printf("Date: %s\n", dateStr);
-	  printf("Time: %s\n", timeStr);
-//	  printf("hello\n");
-	  //
-      osDelay(1000);
-  }
-  /* USER CODE END 5 */
-}
-
-/**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM5 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM5)
-  {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.
