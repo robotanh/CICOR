@@ -147,15 +147,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
 //  if (HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR1) != 0x2346)
 //  {
-      set_time(15, 54, 0);
-      set_date(25, 1, 7, RTC_WEEKDAY_WEDNESDAY);
+//      set_time(15, 54, 0);
+//      set_date(25, 1, 7, RTC_WEEKDAY_WEDNESDAY);
 //      HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x2346);  // Mark as initialized
 //  }
 
   /* Set alarm to 15:55:00 on the current date */
   RTC_DateTypeDef currentDate;
   HAL_RTC_GetDate(&hrtc, &currentDate, RTC_FORMAT_BIN);
-  set_alarm(15, 55, 0, currentDate.Date);
+//  set_alarm(15, 55, 0, currentDate.Date);
   myAccConfigDef.dataRate = LIS3DSH_DATARATE_50    ;
   myAccConfigDef.fullScale = LIS3DSH_FULLSCALE_2;
   myAccConfigDef.antiAliasingBW = LIS3DSH_FILTER_BW_50;
@@ -176,10 +176,11 @@ int main(void)
   {
     /* USER CODE END WHILE */
 	  if(LIS3DSH_PollDRDY(1000)== true){
-		  myData = LIS3DSH_GetDataLinearScaled();
+		  myData = LIS3DSH_GetDataLinearScaled(); //Get scaled x y axis data which scale 16bit data to 8bit data
 		  myDataRaw = LIS3DSH_GetDataRaw();
 //		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
 	  }
+	  /* Using LEDs to indicate directions */
 	  if(myDataRaw.x < 0){
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
@@ -204,7 +205,7 @@ int main(void)
 		  mousehid.mouse_y = myData.y;
 	  }
 	  else mousehid.mouse_y = 0;
-
+	  // Check mouse button for sending report to USB HID
 	  if (button_flag == 1){
 		  mousehid.button = 1;
 		  USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof(mousehid));

@@ -201,21 +201,21 @@ bool LIS3DSH_PollDRDY(uint32_t msTimeout)
 
 //** Calibration functions **//
 //1. Set X-Axis calibrate
-void LIS3DSH_X_calibrate(float x_min, float x_max)
-{
-	__X_Bias = (x_max+x_min)/2.0f;
-	__X_Scale = (2*1000)/(x_max - x_min);
-}
-//2. Set Y-Axis calibrate
-void LIS3DSH_Y_calibrate(float y_min, float y_max)
-{
-	__Y_Bias = (y_max+y_min)/2.0f;
-	__Y_Scale = (2*1000)/(y_max - y_min);
-}
-//3. Set Z-Axis calibrate
-void LIS3DSH_Z_calibrate(float z_min, float z_max)
-{
-	__Z_Bias = (z_max+z_min)/2.0f;
-	__Z_Scale = (2*1000)/(z_max - z_min);
-}
+//void LIS3DSH_X_calibrate(float x_min, float x_max)
+//{
+//	__X_Bias = (x_max+x_min)/2.0f;
+//	__X_Scale = (2*1000)/(x_max - x_min);
+//}
+////2. Set Y-Axis calibrate
+//void LIS3DSH_Y_calibrate(float y_min, float y_max)
+//{
+//	__Y_Bias = (y_max+y_min)/2.0f;
+//	__Y_Scale = (2*1000)/(y_max - y_min);
+//}
+////3. Set Z-Axis calibrate
+//void LIS3DSH_Z_calibrate(float z_min, float z_max)
+//{
+//	__Z_Bias = (z_max+z_min)/2.0f;
+//	__Z_Scale = (2*1000)/(z_max - z_min);
+//}
 
